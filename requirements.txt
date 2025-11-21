@@ -1,0 +1,8 @@
+numpy>=2.3.0
+jax[cuda12]>=0.4.20
+flax>=0.12.0
+optax>=0.2.6
+datasets>=4.4.0
+wandb>=0.22.3
+ipykernel>=7.1.0
+matplotlib>=3.10.7
