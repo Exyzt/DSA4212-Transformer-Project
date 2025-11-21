@@ -74,7 +74,7 @@ represents a character, we aim to learn a parametric model $f_theta$ that captur
 the conditional probability distribution:
 $ P_theta (x_(t + 1) | x_(t - L + 1), dots, x_t) $
 
-, where $L$ is the context window length (the number of previous characters the model
+, where $L$ is the sequence length (the number of previous characters the model
 observes to predict the next character). The model parameters $theta$ are optimized
 to maximize the likelihood of the observed sequences in the training data, typically
 the cross-entropy loss function.
@@ -112,7 +112,7 @@ experience in training neural language models:
   patterns in the data.
 
 - *Hyperparameter Optimization*: Systematically explore the hyperparameter space,
-  particularly the context window length $L$, to identify configurations that yield
+  particularly the sequence length $L$, to identify configurations that yield
   optimal performance. This involves understanding the trade-off between model
   capacity, computational cost, and generalization ability.
 
@@ -307,7 +307,7 @@ All models were implemented using JAX and Flax, leveraging their efficient autom
 differentiation and compilation capabilities. Training was performed on Google TPU T4
 and NVIDIA RTX 3070 Ti.
 
-For our character-level language modelling task on text8, the impelmented base decoder-only transformer was with the following hyperparameters and specification:
+For our character-level language modelling task on text8, the implemented base decoder-only transformer was with the following hyperparameters and specification:
 - *Vocabulary Size*: $27$ ($26$ lowercase letters $+$ space character).
 - *Model Dimension* ($d_"model"$): $64$.
 - *Number of Decoder Blocks*: $6$ decoder blocks.
@@ -318,7 +318,7 @@ For our character-level language modelling task on text8, the impelmented base d
 Next, other considered hyperparameters that affect the training process are
 - *Learning Rate*: With an initial value of $0.001$.
 - *Batch Size*: $128$
-- *Context Window (Sequence Length)*: $32$
+- *Sequence Length*: $32$
   
 The loss function used is the cross-entropy loss to maximize the likelihood of
 the correct next character and the optimizer used was Adam optimizer.
@@ -328,7 +328,7 @@ minimum test loss of $1.29$. The loss curve is shown as follows:
 
 #figure(
   image("Figures/BaseDecoderOnlyTransformerLossCurve.png"),
-  caption: "Base Deconder-Only-Transformer Loss Curve"
+  caption: "Base Decoder-Only-Transformer Loss Curve"
 )
 
 == Hyperparameter Tuning
@@ -369,16 +369,16 @@ The fine-tuned hyperparameters are
   ) <Fig6>
   From @Fig6, the best MLP ratio is $4$.
 
-- *Batch Size & Context Window* \
+- *Batch Size & Sequence Length* \
   The candidates that were chosen are $(B, T) = ((64, 32), (128, 32), (128, 64))$,
   then the result is as follows:
   #figure(
     image("Figures/btplot.png", width: 70%),
   ) <Fig7>
-  From @Fig7, the best observed batch size and context window are $128$ and $32$
+  From @Fig7, the best observed batch size and sequence length are $128$ and $32$
   respectively.
 
-- *Droupout* \
+- *Dropout* \
   The chosen values were $0$, $0.1$, and $0.2$ and the results are shown as follows
   #figure(
     image("Figures/dropoutplot.png", width: 75%),
@@ -388,7 +388,7 @@ The fine-tuned hyperparameters are
 == Experimentation
 === Transformer-I
 Based on the chosen best hyperparameters, trained with the Adam optimizer and
-learning rate $0.01$ with the full dataset in $20,000$ iterations, the model reached 
+learning rate $0.01$ with the full dataset in $80,000$ iterations, the model reached 
 $59.62%$ accuracy.
 
 === Transformer-II
@@ -432,30 +432,52 @@ the model also uses rotary positional encoding (RoPE) instead of learned positio
 encoding. The result for this configuration was $69.08%$ accuracy.
 
 === RNN-LSTM
-Finally, an RNN-LSTM model was tested using PyTorch with the following specifications 
-and results shown on @Tab1, where the models having embedding dimension of $128$
-and hidden dimension of $512$.
+LSTMs are a type of recurrent neural network that process sequences one step at a time, 
+using a hidden state and gating mechanisms to remember or forget information. This 
+makes them good at modelling short- to medium-range dependencies but limits parallelism 
+and long-range modeling. Transformers remove recurrence entirely and use 
+self-attention, allowing every position to directly access all others in parallel. As a 
+result, transformers capture long-range patterns more effectively and train much 
+faster, especially on large datasets.
+
+Finally, an RNN-LSTM model was tested using PyTorch with epochs, where one epoch 
+corresponds to a complete pass through the dataset using a PyTorch dataloader. This is 
+simply the standard training setup in PyTorch, and it provides a convenient way to 
+monitor training and validation performance after each full sweep of the data. 
+
+The specifications and results shown on @Tab1, where each row represents one experiment
+for one hyperparameter testing at different values. The hyperparameters to be tuned are 
+in the order of the rows in the table below. In each experiment, the best value is found
+and then used for the next test. All tests were performed with a smaller subset of the 
+full data. For better generalization, the smallest validation loss is used as the point 
+of reference.
+
+The final row of @Tab1 is the optimal hyperparameter configuration for the LSTM model,
+where the models have an embedding dimension of $128$ and hidden dimension of $256$.
+
 #place(top+center, scope: "parent", float: true)[
   #figure(
     table(
       align: center,
       columns: 8,
       rows: 4,
-      table.header([Hyperparam.], [Learning \
-       Rate], [Batch \ Size], [Context \ Window], [Model \ Size], [Val. \ Loss], 
-       [Acc. \ (All)], [Acc. \ (Next Char.)]),
-       [], [$3 times 10^(-4)$], [$128$], [$64$], [Small], [$1.4215$], [$56.79%$], 
-       [$58.06%$],
-       [], [$3 times 10^(-4)$], [$128$], [$64$], [Small], [$1.4215$], [$56.81%$], 
-       [$58.08%$],
-       [], [$3 times 10^(-4)$], [$128$], [$128$], [Small], [$1.4112$], [$57.87%$], 
-       [$58.57%$],
+      table.header([Hyperparameter], [Learning \
+       Rate], [Batch \ Size], [Sequence \ Length], [Model \ Size], [Val. \ Loss], 
+      [Acc. \ (All)], [Acc. \ (Next Char.)]),
+      [Learning Rate], [$bold(3 times 10^(-4))$], [$128$], [$64$], [Small], [$1.4215$], [$56.79%$], 
+      [$58.06%$],
+      [Batch Size], [$3 times 10^(-4)$], [$bold(128)$], [$64$], [Small], [$1.4215$], [$56.81%$], 
+      [$58.08%$],
+      [Sequence Length], [$3 times 10^(-4)$], [$128$], [$bold(128)$], [Small], [$1.4112$], [$57.87%$], 
+      [$58.57%$],
+      [Model Size], [$3 times 10^(-4)$], [$128$], [$128$], [#text("Small", weight: "bold")], [$1.4112$], [$57.87%$], 
+      [$58.57%$],
     ), caption: "LSTM Configurations & Accuracies"
   ) <Tab1>
 ]
 
 = Discussion
-From the trained models, the configurations and hyperparameters are summarized in
+From the trained models, the configurations and hyperparameter are summarized in
 @Tab2.
 
 Notably, the hyperparameter values that was obtained from the hyperparameter tuning
@@ -464,14 +486,14 @@ subset of the training dataset not being able to represent the whole dataset.
 Another possible cause is due to sequential dependence, as the hyperparameter tuning
 process only uses the first 500,000 characters, then the earlier portions of the text
 might have different characteristics than the later portions. The difference of the 
-character frequency distribution between the subset and the full dataset may also play a role in the lower accuracy of the hyperparmater tuned model.
+character frequency distribution between the subset and the full dataset may also play a role in the lower accuracy of the hyperparameter tuned model.
 #place(top+center, scope: "parent", float: true)[
   #figure(
     table(
       align: center,
       rows: 4,
       columns: 6,
-      table.header([], [Learning \ Rate], [Batch \ Size], [Context \ Window], [Acc. \ (All)], [Acc. \ (Next Char.)]),
+      table.header([Hyperparameter], [Learning \ Rate], [Batch \ Size], [Sequence \ Length], [Acc. \ (All)], [Acc. \ (Next Char.)]),
       [*Transformer-I*], [0.01], [128], [32], [57.89%], [59.62%],
       [*Transformer-II*], [[Refer to @TabExp]], [256], [64], [65.35%], [68.31%],
       [*Transformer-III*], [[Refer to @TabCos]], [64], [256], [65.96%], [69.08%],
@@ -482,7 +504,7 @@ character frequency distribution between the subset and the full dataset may als
 ]
 
 Based on @Tab2, the optimal model is *Transformer-III*:
-- *Context Window*: $256$ characters.
+- *Sequence Length*: $256$ characters.
 - *Architecture*: $6$ decoder layers, $d_"model" = 256$, & $8$ attention heads.
 - *Positional Encoding*: RoPE
 - *Learning Rate*: Warmup Cosine Decay Scheuler (Refer to @TabCos)
@@ -518,12 +540,12 @@ This project successfully implemented and trained a decoder-only transformer
 architecture for character-level language modeling on the text8 dataset, achieving a 
 final test accuracy of 69.08% on next-character prediction. Through systematic 
 experimentation, several critical design choices were identified that significantly 
-impact the model's performance: context window length of 256 characters provided 
+impact the model's performance: sequence length of 256 characters provided 
 optimal balance between capturing local patterns and long-range dependencies, while 
 Rotary Position Embedding (RoPE) demonstrated clear advantages over traditional learned 
 encodings through its explicit relative position information and natural distance decay 
 properties. The experimental process revealed important methodological 
-insights, such ashyperparameters optimized on training subsets did not necessarily 
+insights, such as hyperparameters optimized on training subsets did not necessarily 
 transfer  optimally to the full dataset, highlighting the importance of validating 
 configurations on representative data samples and understanding potential 
 distributional differences between subset and complete corpus.
