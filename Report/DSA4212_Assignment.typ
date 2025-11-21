@@ -48,6 +48,8 @@
       #link("mailto:e0968755@u.nus.edu")
     ]
   )
+
+  GitHub Repository: #link("https://github.com/Exyzt/DSA4212-Transformer-Project")
 ]
 
 = Introduction
@@ -270,8 +272,8 @@ is predicted based solely on the preceding context.
   $ "FFN"(bold(upright(x))) = "ReLU"(bold(upright(x)) bold(upright(W))_1 + bold(upright(b))_1) bold(upright(W))_2 + bold(upright(b))_2 $
 
   While the linear transformations are the same across different positions, they use
-  different parameters from layer to layer NeurIPS. The intermediate dimension (also
-  called filter size or feedforward size) is typically 4 times the model dimension.
+  different parameters from layer to layer. The intermediate dimension (also
+  called filter size or feed-forward size) is typically 4 times the model dimension.
 
 - *Layer Normalization & Residual Connections* \
   Layer normalization and residual connections, while conceptually not essential to the
@@ -507,7 +509,7 @@ Based on @Tab2, the optimal model is *Transformer-III*:
 - *Sequence Length*: $256$ characters.
 - *Architecture*: $6$ decoder layers, $d_"model" = 256$, & $8$ attention heads.
 - *Positional Encoding*: RoPE
-- *Learning Rate*: Warmup Cosine Decay Scheuler (Refer to @TabCos)
+- *Learning Rate*: Warmup Cosine Decay Scheduler (Refer to @TabCos)
 - *Dropout*: $0.2$
 - *Batch Size*: $64$
 with achieved accuracy of $69.08%$.
